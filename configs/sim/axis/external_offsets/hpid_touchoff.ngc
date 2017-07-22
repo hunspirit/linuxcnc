@@ -1,9 +1,5 @@
 ;hpid_touchoff (SIMULATION)
 
-;NOTE: M66 is a queuebuster and fails if eoffset active
-;      so check for arc-ok must be made beofre
-;      enabling offsets
-
 o<hpid_touchoff> sub
   #<pierce_height> = #1
    #<pierce_delay> = #2
@@ -24,9 +20,6 @@ M3 S1 ;start torch & assert first enable (enable-in-a) for eoffset
 M66 P0 L1 Q#<arc_timeout>
           ;M66 wait on digital input (arc-ok)
           ;
-          ;NOTE: M66 is a queubuster and must be sampled before
-          ;      external offsets are fully enabled by the M64 below
-          ;
           ;P0 motion.digital-in-00
           ;L1 wait low to high
           ;Q5 timeout seconds
@@ -38,9 +31,6 @@ o<if1> if [#<arc_status> LT 0]
 o<if1> else
           M64 P0
           ;M64 set digital output ON to finish enabling (enable-in-b) eoffset
-          ;NOTE: any queuebusters occuring while external offsets
-          ;      are applied will STOP motion and end a running 
-          ;      program
           (debug, arc OK, continue)
 o<if1> endif
 

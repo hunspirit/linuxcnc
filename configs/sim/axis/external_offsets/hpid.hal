@@ -72,8 +72,6 @@ net E:enable-in-b     => zo.enable-in-b
 # signals with source elsewhere
 
 # E:arc-ok is read by GCODE using M66 prior to final enable:
-#          NOTE: M66 is a queuebuster and must be used prior
-#                to enabling external offsets
 #   E:arc-ok          <= torch controller sets somehow
 net E:arc-ok          => motion.digital-in-00
 

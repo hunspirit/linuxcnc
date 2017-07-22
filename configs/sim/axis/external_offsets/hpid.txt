@@ -69,8 +69,7 @@ hpid_sub.ngc:
          
 Note that a handshake is required to enable external offsets:
 
-Gcode commands start the torch, wait for arc-ok, and if succesful assert the secondary enable (signal: E:enable-in-b).   Since M66 is a 'queuebuster' command, it must be used PRIOR to enabling the z external offset (See the Restrictions section in the Docs chapter on External Axis Offsets).
-
+Gcode commands start the torch, wait for arc-ok, and if succesful assert the secondary enable (signal: E:enable-in-b).
 
 The eoffset_pid component (named 'zo' in the sim config) works to null the error between its command and feedback.  The feedback loop uses:
 
