@@ -72,9 +72,10 @@ if the net motion (offset plus teleop jogging or coordinated motion)
 reaches a soft limit for the 'L' coordinate.
 
 For many applications, the 'axis.L.eoffset-scale' pin is constant
-making the requested offset equivalent to the product of the
-'axis.L.eoffset-counts' and the (constant) 'axis.L.eoffset-scale' pin
-values.
+and the net 'axis.L.eoffset-request' response to
+'axis.L.eoffset-counts' is equivalent to the product of the
+accumulated value of 'axis.L.eoffset-counts' and the (constant)
+'axis.L.eoffset-scale' pin values.
 
 === Machine-off/Machine-on
 

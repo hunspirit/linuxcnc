@@ -101,4 +101,3 @@ net E:error           <= zo.dbg-error
 net E:holding         <= zo.dbg-holding
 net E:state           <= zo.dbg-state
 net E:hold-request    => zo.hold-request
-net E:minimum-vel     => zo.minimum-vel
