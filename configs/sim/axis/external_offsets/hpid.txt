@@ -1,4 +1,6 @@
-hpid.ini - height (Z axis) PID control using external offsets (torch height control)
+Height (Z axis) PID control using external offsets (torch height control)
+hpid.ini    - inch-based
+hpid_mm.ini - mm-based
 
 For info on the compoent, see the man page ($ man eoffset_pid)
 
@@ -8,7 +10,7 @@ Usage:
   3) HOME All   (Ctrl-Home)
   4) Run        (R)
 
-The Minimum velocity (in inches/sec) for corner lockout may be specified with a spinbox.  Use a value of zero to disable.  The hold button requests momentary holding of the external offset.
+The Minimum velocity (in units/sec) for corner lockout may be specified with a spinbox.  Use a value of zero to disable.  The hold button requests momentary holding of the external offset.
 
 The Perturb On/Off buttons control a signal generator that dynamically alters the requested torch-volts.  The signal generator's waveform, frequency and amplitude may be set with pyvcp widgets.  The introduced perturbations are useful for tuning the PID settings and may be used when the program is running or paused.
 
@@ -23,9 +25,14 @@ These ini file settings may be disabled by adding a initial comment character (#
 
 #APP = sim_pin ...
 
-The hpid.ini (height control by pid) uses the hal component zo (an instance of eoffset_pid.comp) to control torch height by regulating torch voltage.
+The hpid*.ini (height control by pid) uses the hal component zo (an instance of eoffset_pid.comp) to control torch height by regulating torch voltage.
 
-The torch controller is simulated (sim_torch.hal) by connecting the z axis external offset output (axis.z.eoffset) to a scale component (sim:tovolts) and scaling by a factor of 1000 so that a 0.1 inch z offset height corresponds to a 100 volt torch voltage.  The simulated torch voltage is passed through a lowpass filter component (sim:torch) to simulate the bandwidth-limited measurement of torch voltage.  The bandwidth is set by the filter gain setting pin (sim:torch.gain).  (See the lowpass filter man page for the relationship of lowpass gain and filter bandwidth).  The delay to achieve arc-ok is simulated by a oneshot component (sim:arcwait), the delay time is set by the pin sim:arcwait.width.
+The torch controller is simulated (sim_torch.hal) by connecting the z axis external offset output (axis.z.eoffset) to a scale component (sim:tovolts) and scaling by a factor of 1000 so that a 0.1 inch z offset height corresponds to a 100 volt torch voltage.  The simulated torch voltage is passed through a lowpass filter component (sim:torch) to simulate the bandwidth-limited measurement of torch voltage.  The bandwidth is set by the filter gain setting pin (sim:torch.gain).  (See the lowpass filter man page for the relationship of lowpass gain and filter bandwidth).  The delay to achieve arc-ok is simulated by a oneshot component (sim:arcwait), the delay time is set by the pin sim:arcwait.width.  Key parameters are set with inifile settings:
+
+  [AXIS_Z]HPID_SIM_TOVOLTS_GAIN
+  [AXIS_Z]HPID_SIM_TOVOLTS_OFFSET
+  [AXIS_Z]HPID_SIM_TORCH_GAIN
+  [AXIS_Z]HPID_SIM_TORCH_ARCWIDTH_WAIT
 
 To test, the [DISPLAY]OPEN_FILE=hpid_demo.ngc gcode file calls an ngcgui subroutine hpid_sub.ngc.  An ngcgui tab is also included to set parameters and make gcode files with other settings for testing.
 
@@ -130,33 +137,51 @@ A sine wave perturbation is convenient to observe tracking of command and feedba
 The square wave is most commonly used to investigate system overshoot, undershoot, or oscillation for step changes in the command input.
 
 #----------------------------------------------------------
-Hardware (non-simulation) implementations
+HARDWARE IMPLEMENTATIONS (non-simulation)
 
-The halfile LIB:basic_sim.tcl is for simulation configurations and should be replaced with an appropriate halfile for real hardware.
+The halfile LIB:basic_sim.tcl loads necessary hal components and makes connections for simulated operation of the machine specified by the inifile settings.  This halfile must be replaced with an appropriate halfile for the actual hardware system.
 
-Use [HAL]HALFILE=hpid.hal as-is to make most of the required connections.  This file defines signals that need additional connections which should be made in a separate HALFILE similar in purpose to the sim_torch.hal file.
+Use [HAL]HALFILE=LIB:hpid.hal AS-IS to make most of the required connections.  This file defines signals that need additional connections which should be made in a separate HALFILE similar in purpose to the sim_torch.hal file.  Inifile settings are used to specify key parameters used:
 
-  1) The signal E:arc-ok must be connected to a pin indicating satisfactory arc status.
+  [AXIS_Z]HPID_PGAIN
+  [AXIS_Z]HPID_IGAIN
+  [AXIS_Z]HPID_DGAIN
+  [AXIS_Z]HPID_K
+  [AXIS_Z]HPID_FNUM
 
-  2) The signal E:feedback must be connected to a pin representing measured torch voltage.
+The LIB:hpid.hal file is located in the HALLIB_DIR as specified by:
 
-  3) The signal E:minimum-vel should be set (sets -- setsignal) to the required minimum velocity for corner lockout.
+  $ linuxcnc_var HALLIB_DIR
 
-  4) The signal E:perturb is available for connection to a perturbation signal (as with the sim configuration)
+If special circumstances warrant altering the signals created by LIB:hpid.hal, the preferred method is to unlink hal pins or delete signals in user halfiles using the halcmds unlinkp and delsig.
 
-  5) The signal E:is-off (inversion of halui.machine.is-on) is available for conection elsewhere if needed.
+All additional and custom  connections should be made in user halfiles that follow the [HAL]HALFILE=LIB:hpid.hal item.
 
-#----------------------------------------------------------
-The HALFILES hpid_panel.hal is not required but may be used to enable a perturbation signal generator or as a starting point for a custom pyvcp panel.
+REQUIRED Input connections:
 
-#----------------------------------------------------------
-The HALFILE sim_torch.hal should be replaced with a halfile that handles all hardware-specific torch controller logic and makes these connections:
+  1) The signal E:arc-ok MUST be connected to a pin indicating satisfactory arc status.
 
-   net  E:arc-ok      <= indicator_of_arc_status
-   net  E:feedback    <= measure_of_torch-voltage
-   sets E:minimum-vel    value_in_units_per_second
+  2) The signal E:feedback MUST be connected to a pin representing measured torch voltage.
+
+OPTIONAL Input Signals:
+
+  1) The input signal E:enable-in-c may be connected to a sourcing hal pin to manage the third enable input to the eoffset_pid component.
+
+  2) The input signal E:minimum-vel may be set using sets (setsignal) to the required minimum velocity for corner lockout or connected a sourcing hal pin controlled by other logic
+
+  3) The input signal E:hold-request may be connected to a sourcing hal pin to activate a hold requet.
+
+  4) The input signal E:perturb is available for connection to a perturbation signal (as with the sim configuration)
+
+OPTIONAL Output Signals:
+
+  1) The output signal E:is-off (inversion of halui.machine.is-on) is available for conection elsewhere if needed.
+
+The HALFILE sim_torch.hal should be replaced with a halfile that handles all hardware-specific torch controller logic and makes the required and optional connections indicated above.
 
 The ngc subroutine files hpid_touchoff.ngc and hpid_sub.ngc should be adapted as-required for hardware-specific usage.
+
+The HALFILES hpid_panel.hal is not required but may be used to connect to the E:perturb perturbation signal generator or as a starting point for a custom pyvcp panel.
 
 #----------------------------------------------------------
 Alternate PID calculation

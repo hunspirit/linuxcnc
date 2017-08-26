@@ -15,10 +15,15 @@ inputs \\fBpgain\\fR, \\fBigain\\fR, and \\fBdgain\\fR to
 generate an external offset control presented as an s32
 \\fBkcounts\\fR pin.
 
+An optional input pin, \\fBperturb\\fR, is added to the \\fBcommand\\fR
+input internally.  This pin is provided to support addition of
+a small perturbation signal for testing and tuning the pid loop.
+
 Scaling is controlled by a single input pin
 \\fBk\\fR; a reciprocal output is provided at the
-\\fBkreciprocal\\fR pin.  The default value for \\fBk\\fR
-should be suitable for most configurations.
+\\fBkreciprocal\\fR pin.  The default value (10000) for \\fBk\\fR
+should be suitable for most \\fBinch-based\\fR configurations;
+\\fBmm-based\\fR systems typically use a value of 400.
 
 Three enabling inputs \\fBenable-in-a\\fR, \\fBenable-in-b\\fR,
 and \\fBenable-in-c\\fR are 'anded' internally to enable
@@ -111,6 +116,7 @@ pin  in   bit enable_in_c  =  0     "Enable Input c";
 pin  in float minimum_vel  =  0     "units/sec (cornerlock aid)";
 
 pin  in float command      =  0     "Command Input";
+pin  in float perturb      =  0     "Perturb Input (adds to command)";
 pin  in float feedback     =  0     "Feedback Input";
 
 pin  in float pgain        = 10     "Proportional gain";
@@ -154,7 +160,6 @@ license "GPL";
 
 static int    run_ct   = 0;
 static int    delay_ct = 0;
-
 
 static double periodrecip;
 static double the_period;
@@ -217,6 +222,7 @@ FUNCTION(_) {
     static int    old_hold  = 0;
 
     double the_feedback;
+    double the_command = command + perturb;
     int    kfactor;
     int    enable_in;
     ofunc* thefunc;
@@ -294,8 +300,8 @@ FUNCTION(_) {
         delay_ct        = 0;
         data->prev_cmd  = 0;
         data->prev_fb   = 0;
-        data->prev_cmd  = command;
-        data->prev_fb   = command;
+        data->prev_cmd  = the_command;
+        data->prev_fb   = the_command;
         data->prev_diff = 0; //experminental func1
         the_state       = STARTING;
         dprint("READY->STARTING",kcounts);
@@ -329,9 +335,9 @@ FUNCTION(_) {
             if (!hold && old_hold) {
                 // end of hold interval
                 old_hold        = hold;
-                the_feedback    = command;
-                data->prev_cmd  = command;
-                data->prev_fb   = command;
+                the_feedback    = the_command;
+                data->prev_cmd  = the_command;
+                data->prev_fb   = the_command;
                 data->err_i     = 0;
                 data->prev_diff = 0; //experminental func1
             }
@@ -395,7 +401,7 @@ FUNCTION(_) {
     data->p_gain    = pgain;
     data->i_gain    = igain;
     data->d_gain    = dgain;
-    data->cmd       = command;
+    data->cmd       = the_command;
     data->fb        = the_feedback;
     data->n_filt    = nfilt; // for experimental func1:
     data->kptd_gain = kptd;  // for experimental func1:
@@ -413,7 +419,7 @@ FUNCTION(_) {
     }
 
     // items for next iteration:
-    data->prev_cmd  = command;
+    data->prev_cmd  = the_command;
     data->prev_fb   = the_feedback;
     data->prev_diff = data->diff; //experminental func1
 

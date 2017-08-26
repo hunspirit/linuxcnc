@@ -6,11 +6,11 @@ loadrt lowpass   names=sim:torch
 loadrt oneshot   names=sim:arcwait
 
 #---------------------------------------------------
-# scale: 0.1 inch -->  100 volts:
-setp   sim:tovolts.gain   1000
+# typical scaling: 1000 (0.1 inch -->  100 volts)
+setp   sim:tovolts.gain [AXIS_Z]HPID_SIM_TOVOLTS_GAIN
 
 # simulate voltage at arc-ok:
-setp   sim:tovolts.offset   60
+setp   sim:tovolts.offset [AXIS_Z]HPID_SIM_TOVOLTS_OFFSET
 
 # sim:torch.gain (hal param) sets bandwidth
 # 1000Hz --> 0.9981
@@ -19,11 +19,11 @@ setp   sim:tovolts.offset   60
 #   20Hz --> 0.1181
 #   10Hz --> 0.0609
 #    1Hz --> 0.0063
-setp sim:torch.gain 0.2696
+setp sim:torch.gain [AXIS_Z]HPID_SIM_TORCH_GAIN
 
 # simulate time (in seconds) for valid arc:
 # for success: 0 < sim:arcwait.width < arc_timeout
-setp   sim:arcwait.width 1
+setp   sim:arcwait.width [AXIS_Z]HPID_SIM_TORCH_ARCWIDTH_WAIT
 
 #---------------------------------------------------
 addf   sim:tovolts servo-thread
@@ -32,8 +32,8 @@ addf   sim:arcwait servo-thread
 #---------------------------------------------------
 
 #   simulate torch voltage from scaled z-eoffset:
-#   E:z-eoffset <= elsewhere
-net E:z-eoffset => sim:tovolts.in
+net S:z-eoffset <= axis.z.eoffset
+net S:z-eoffset => sim:tovolts.in
 
 net S:zscaled   <= sim:tovolts.out
 net S:zscaled   => sim:torch.in

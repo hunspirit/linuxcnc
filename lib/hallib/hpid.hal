@@ -1,19 +1,60 @@
+# LIB:hpid.hal: Connections for eoffset_pid component
+
+#   Using this [HAL]HALFILE=LIB:hpid.hal simplifies use of
+#   the external offset component (eoffset_pid)
+#
+#   If special configurations require modifications, instead
+#   of editing this file, use additional halfiles to
+#   unlink pins or delete signals with the halcmds 'unlinkp'
+#   and 'delsig'.
+#
+#  Hal activities of this file:
+#
+#   1) loadrt & addf the eoffsets_pid component (zo)
+#
+#   2) Create signals and make all of the MANDATORY
+#      connections that can be made without knowledge of
+#      the user configuration between zo.* and:
+#        axis.z.*  (external offset pins for z coordinate)
+#        motion.*  (motion module pins)
+#        halui.*   (halui pins)
+#
+#   3) Create signals for additional MANDATORY connections
+#      whose source connection must be defined elsewhere
+#      by the user configuration:
+#        E:arc-ok
+#        E:feedback
+#      These signals MUST BE CONNECTED ELSEWHERE in
+#      subsequent user halfiles.
+#
+#   4) Create signals for OPTIONAL connections.
+#      Source pin connection must be defined elsewhere:
+#        E:enable-in-c
+#        E:minimum-vel
+#        E:hold-request
+#        E:perturb
+#      Sink pin connection must be defined elsewhere:
+#        E:is-off
+#
+#   6) Create signals for debug/halscope usage (DBG:*)
+
+
+#-----------------------------------------------------------
+# Begin
 loadrt eoffset_pid names=zo
-loadrt sum2        names=summer
 
-# Initial PID gain settings
-# Notes: (simulation)
-#        dgain mandatory
-#        igain not useful
-setp zo.pgain 30
-setp zo.igain  0
-setp zo.dgain  0.4
+# eoffset_pid (zo) settings:
+setp zo.pgain [AXIS_Z]HPID_PGAIN
+setp zo.igain [AXIS_Z]HPID_IGAIN
+setp zo.dgain [AXIS_Z]HPID_DGAIN
+setp zo.k     [AXIS_Z]HPID_K
+setp zo.fnum  [AXIS_Z]HPID_FNUM
 
-setp zo.k     10000
-setp zo.fnum      0
+# Note:
+# zo.k = 10000 is appropriate for inch-based systems
+# for mm-based systems, equivalent value is 394
 
 # order so offset computation precedes motion-* threads
-addf summer   servo-thread 1
 addf zo       servo-thread 2
 
 #-----------------------------------------------------------
@@ -43,12 +84,9 @@ net E:kcounts         => axis.z.eoffset-counts
 net E:feedback        => zo.feedback
 
 #-----------------------------------------------------------
-# zo command & request  (use M68 to set analog out pin 0
+# E:request => pidcommand  (use M68 to set analog out pin 0)
 net E:request         <= motion.analog-out-00
-net E:request         => summer.in0
-
-net E:command         <= summer.out
-net E:command         => zo.command
+net E:request         => zo.command
 
 #-----------------------------------------------------------
 # current velocity (corner lockout)
@@ -76,28 +114,26 @@ net E:enable-in-b     => zo.enable-in-b
 net E:arc-ok          => motion.digital-in-00
 
 # extra zo enable (a,b,c are anded together):
-# default to 1, use elsewhere as required:
 setp zo.enable-in-c   1
+# default to 1, use elsewhere as required (optional):
 net E:enable-in-c     => zo.enable-in-c
 
-#   provision for a perturbation to pid input command
-net E:perturb         => summer.in1
+# provision to perturb input to pid command (optional)
+net E:perturb         => zo.perturb
 
-# cornerlock minimum velocity (units/sec):
+# cornerlock minimum velocity (units/sec) (optional):
 net E:minimum-vel     => zo.minimum-vel
+
+# zo hold-request (source elsewhere, optional)
+net E:hold-request    => zo.hold-request
 
 #-----------------------------------------------------------
 # signals with sink elsewhere
-# convenience pin, use as required (sim:hpid_panel.hal):
+# E:is-off (sim:hpid_panel.hal) (optional):
 net E:is-off          <= zo.is-off
 
 #-----------------------------------------------------------
-# signals for sim only:
-net E:z-eoffset       <= axis.z.eoffset
-
-#-----------------------------------------------------------
-# signals for halscope usage:
-net E:error           <= zo.dbg-error
-net E:holding         <= zo.dbg-holding
-net E:state           <= zo.dbg-state
-net E:hold-request    => zo.hold-request
+# signals for debugging/halscope usage:
+net DBG:error           <= zo.dbg-error
+net DBG:holding         <= zo.dbg-holding
+net DBG:state           <= zo.dbg-state

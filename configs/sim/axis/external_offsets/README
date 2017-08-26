@@ -2,4 +2,5 @@ eoffset_demo.ini ----- Basic demo (XYZ)
 jwp_z.ini ------------ Jog while paused (Z) demo
 dynamic_offsets.ini -- Z offset waveforms demo
 opa.ini -------------- Offset per Angle (XZC) demo
-hpid.ini ------------- Torch height PID demo
+hpid.ini ------------- Torch height PID demo (in)
+hpid_mm.ini ---------- Torch height PID demo (mm)
