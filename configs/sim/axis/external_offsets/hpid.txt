@@ -36,7 +36,7 @@ The torch controller is simulated (sim_torch.hal) by connecting the z axis exter
 
 To test, the [DISPLAY]OPEN_FILE=hpid_demo.ngc gcode file calls an ngcgui subroutine hpid_sub.ngc.  An ngcgui tab is also included to set parameters and make gcode files with other settings for testing.
 
-The hpid_sub.ngc subroutine accepts inputs to repeat an arbitrary number (#<rpt_ct>) of simple patterns with fixed width and height and horizontal separation.   Before starting a pattern, a touchoff subroutine (hpid_touchoff.ngc) is called to start the simulated torch using a spindle (M3 S1) command.  Settings can be altered for important items like torch_setpoint, torch_cut_hgt, pierce_hgt, pierce_dly, etc.
+The hpid_sub.ngc subroutine accepts inputs to repeat an arbitrary number (#<rpt_ct>) of simple patterns with fixed width and height and horizontal separation.   Before starting a pattern, a touchoff subroutine (hpid_touchoff.ngc) is called to start the simulated torch using the hal pin motion.digital-out-00 (M64 P0 command).  Settings can be altered for important items like torch_setpoint, torch_cut_hgt, pierce_hgt, pierce_dly, etc.
 
 The simulation hpid_touchoff.ngc subroutine omits probing to the surface -- a real touchoff routine would likely include this step to probe the surface and establish an appropriate z axis zero reference.
 
@@ -48,35 +48,36 @@ The required sequence of gcode commands that relate to hardware control and hal 
 
 hpid_sub.ngc:
   M68 -- read torch voltage setpoint
-         (pin motion.analog-out-00)
+         (pin     motion.analog-out-00)
          (signal: E:request)
   M65 -- deassert secondary enable
+         (pin:    motion.digital-out-01)
          (signal: E:enable-in-b)
   
     hpid_touchoff.ngc:
       M3 --- Start torch
-             (pin: motion.spindle-on)
+             (pin:    motion.digital-out-00)
              (signal: E:enable-in-a)
       M66 -- Wait for arc-ok
              (signal: E:arc-ok)
       M2 --- Stop if no arc-ok within timeout
       M64 -- Assert secondary enable
-             (pin: motion.digital-in-00)
+             (pin:    motion.digital-out-01)
              (signal: E:enable-in-b)
       G4  -- Dwell for pierce-delay
 
 hpid_sub.ngc:
   (run the pattern making program to conclusion)
   M68 -- return torch voltage setpoint to 0
-         (pin motion.analog-out-00)
+         (pin:    motion.analog-out-00)
          (signal: E:request)
-  M5 --- Stop torch (spindle command)
-         (pin: motion.spindle-on)
+  M5 --- Stop torch
+         (pin:   motion.digital-out-00)
          (signal E:enable-in-a)
          
 Note that a handshake is required to enable external offsets:
 
-Gcode commands start the torch, wait for arc-ok, and if succesful assert the secondary enable (signal: E:enable-in-b).
+Gcode commands start the torch, wait for arc-ok, and if successful assert the secondary enable (signal: E:enable-in-b).
 
 The eoffset_pid component (named 'zo' in the sim config) works to null the error between its command and feedback.  The feedback loop uses:
 

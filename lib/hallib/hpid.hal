@@ -1,5 +1,14 @@
 # LIB:hpid.hal: Connections for eoffset_pid component
 
+# NOTE: user managed pins:
+#  User writes:
+#  motion.analog-out-00  E:request      requested torch voltage
+#  motion.digital-out-00 E:enable-in-a  Primary   enable (torch-on)
+#  motion.digital-out-00 E:enable-in-b  Secondary enable (arc handshake)
+#  motion.digital-out-00 E:enable-in-c  Tertiary  enable (user defined)
+#  User reads:
+#  motion.digital-in-00  E:arc-ok       Arc ok
+
 #   Using this [HAL]HALFILE=LIB:hpid.hal simplifies use of
 #   the external offset component (eoffset_pid)
 #
@@ -94,16 +103,14 @@ net E:current-vel     <= motion.current-vel
 net E:current-vel     => zo.current-vel
 
 #-----------------------------------------------------------
-# Spindle commands are used to start/stop torch:
-# M3 --> torch on
-# M5 --> torch off
-net E:enable-in-a     <= motion.spindle-on
+# pin used to start/stop torch:
+net E:enable-in-a     <= motion.digital-out-00
 net E:enable-in-a     => zo.enable-in-a
 
 #-----------------------------------------------------------
 # GCODE must issue this final enable using M64
 # after verifying arc and asserting E:arc-ok:
-net E:enable-in-b     <= motion.digital-out-00
+net E:enable-in-b     <= motion.digital-out-01
 net E:enable-in-b     => zo.enable-in-b
 
 #-----------------------------------------------------------

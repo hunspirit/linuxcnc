@@ -1,5 +1,5 @@
 (info: Test pattern for torch tuning)
-;Note: spindle hal pins used to control torch
+
 o<hpid_sub> sub
         #<rpt_ct> =  #1 (=10)
 #<torch_setpoint> =  #2 (=80)
@@ -43,15 +43,15 @@ o<rpt> repeat [#<rpt_ct>]
             G0 X#<x1> Y#<y1> Z#<safe_hgt>
 
             M68 E0 Q#<torch_setpoint> (E:request     <= motion.analog-out-00)
-            M65 P0 ;         (deassert E:enable-in-b <= motion.digital-out-00)
+            M65 P1 ;         (deassert E:enable-in-b <= motion.digital-out-01)
 
             ;hpid_touchoff subroutine (typical sequence):
             ;   probe to surface
             ;   set Z0
-            ;   start torch using M3 (assert E:enable-in-a <= motion.spindle-on)
+            ;   start torch          (assert E:enable-in-a <= motion.digital-in-01)
             ;   wait for arc (M66)   (E:arc-ok <= motion.digital-in-00)
             ;      fail:    M2       (terminate)
-            ;      success: M64      (assert E:enable-in-b)
+            ;      success: M64 P1   (assert E:enable-in-b)
             ;   dwell for pierce delay (G4)
             ;   move to cut_height (G1)
 o<hpid_touchoff> call [#<pierce_hgt>][#<pierce_dly>][#<torch_cut_hgt>][#<arc_timeout>][#<probe_speed>][#<to_hgt_speed>]
@@ -62,7 +62,7 @@ o<hpid_touchoff> call [#<pierce_hgt>][#<pierce_dly>][#<torch_cut_hgt>][#<arc_tim
             G1 X #<x1> Y #<y2>
             G1 X #<x1> Y #<y1>
             M68 E0 Q0  ;set torch-volts 0 (E:request <= motion.analog-out-00)
-            M5         ;torch off         (deassert E:enable-in-a)
+            M65 P1     ;torch off         (deassert E:enable-in-a)
             M65 P0     ;                  (deassert E:enable-in-b)
             (debug, torch off)
             G92.1           ;Cancel offsets
