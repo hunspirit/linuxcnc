@@ -192,8 +192,13 @@ man page for details (*$ man eoffset_per_angle*).
 
 Component to manage an external offset using a PID servo loop.
 Candidate applications include a plasma cutter torch-height
-regulation based on measured torch voltage.  Seethe man page for
-details (*$ man eoffset_pid*).
+regulation based on measured torch voltage.  Simulation
+configurations (hpid.ini, hpid_mm.ini) demonstrate usage of
+the eoffset_pid component and a related library halfile
+(LIB:hpid.hal) loads and makes most of the required
+connections for its use.
+
+See the man page for details (*$ man eoffset_pid*).
 
 == Testing
 
@@ -328,11 +333,12 @@ pin (fraction of reference radius).
 Controls are provided to start/stop offset waveforms and to
 set the function type and its parameters.
 
-=== hpid.ini (torch height pid demo))
+=== hpid.ini,hpid_mm.ini (torch height pid demos))
 
-The hpid.ini configuration uses the hal component eoffset_pid
-(*$ man eoffset_pid*) to demonstrate PID control of the
-Z axis for a plasma cutter configured as an XYZ machine.
+The hpid.ini, hpid_mm.ini configurations use the hal component
+eoffset_pid (*$ man eoffset_pid*) to demonstrate PID control
+of the Z axis for a plasma cutter configured as an XYZ
+machine.
 
 Panel LEDs are provided to show important status items.
 
