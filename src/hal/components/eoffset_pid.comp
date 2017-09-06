@@ -19,12 +19,6 @@ An optional input pin, \\fBperturb\\fR, is added to the \\fBcommand\\fR
 input internally.  This pin is provided to support addition of
 a small perturbation signal for testing and tuning the pid loop.
 
-Scaling is controlled by a single input pin
-\\fBk\\fR; a reciprocal output is provided at the
-\\fBkreciprocal\\fR pin.  The default value (10000) for \\fBk\\fR
-should be suitable for most \\fBinch-based\\fR configurations;
-\\fBmm-based\\fR systems typically use a value of 400.
-
 Three enabling inputs \\fBenable-in-a\\fR, \\fBenable-in-b\\fR,
 and \\fBenable-in-c\\fR are 'anded' internally to enable
 offset computation by connection to the \\fBaxis.L.eoffset-enable\\fR
@@ -42,6 +36,14 @@ sustained when the \\fBcurrent-vel\\fR pin value is less than the
 \\fBminimum-vel\\fR pin value.  To disable this function, set
 \\fBminimum-vel\\fR to zero.  A separate pin, \\fBhold-request\\fR,
 is available to hold the current external offset for short intervals.
+
+Scaling for \\fBaxis.L.eoffset-counts\\fR is controlled by the
+unsigned integer input pin \\fBk\\fR; a reciprocal floating point
+output is provided at the \\fBkreciprocal\\fR pin for connection
+to \\fBaxis.L.eoffset-scale\\fR.  The default value (10000) for
+\\fBk\\fR is equivalent to 0.0001 inches/count (0.00254
+mm/count).  Proper scaling requires connection of the
+\\fBunits-per-mm\\fR pin to \\fBhalui.machine.units-per-mm\\fR.
 
 A number of pins require mandatory connections as listed
 in the pin descriptions.
@@ -129,6 +131,7 @@ pin  in   s32 fnum         =     0 "Function selector (default 0 == PID)";
 
 pin  in   bit active       = 0     "From: \\fBmotion.eoffset-active\\fR";
 pin  in   bit is_on        = 0     "From: \\fBhalui.machine.is-on\\fR";
+pin  in float units_per_mm = 0     "From: \\fBhalui.units-per-mm\\fR";
 pin  in float current_vel  = 0     "From: \\fBmotion.current-vel\\fR";
 
 pin out   bit enable_out  "To: \\fBaxis.L.eoffset-enable\\fR";
@@ -245,7 +248,10 @@ FUNCTION(_) {
     } else {
         kfactor = k;
     }
-
+    // Make pid gains settings comparable for either inch or mm
+    // machine-unit specification.   With k=10000, 1 count is scaled
+    // by the axis.L.eoffset-scale == kreciprocal or: 1e-4in ==.00254mm
+    kfactor      = kfactor / (25.4 * units_per_mm);
     kreciprocal  = 1/((float)kfactor);
     dbg_state    = the_state;
     is_off       = !is_on;   // convenience pin
@@ -328,7 +334,7 @@ FUNCTION(_) {
                 dbg_error  = 0;
                 kcounts    = 0; // expects integral action in inner loop
                 enable_out = 0; // relies on motion/control.c holding if:
-                                //    axis.L.eoffset-enable == 0 
+                                //    axis.L.eoffset-enable == 0
                 the_state  = RUNNING;
                 return;
             }

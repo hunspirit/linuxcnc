@@ -65,10 +65,6 @@ setp zo.dgain [AXIS_Z]HPID_DGAIN
 setp zo.k     [AXIS_Z]HPID_K
 setp zo.fnum  [AXIS_Z]HPID_FNUM
 
-# Note:
-# zo.k = 10000 is appropriate for inch-based systems
-# for mm-based systems, equivalent value is 394
-
 # order so offset computation precedes motion-* threads
 addf zo       servo-thread 2
 
@@ -76,6 +72,9 @@ addf zo       servo-thread 2
 # required standard connections TO zo
 net  E:is-on          <= halui.machine.is-on
 net  E:is-on          => zo.is-on
+
+net  E:units-per-mm   <= halui.machine.units-per-mm
+net  E:units-per-mm   => zo.units-per-mm
 
 net  E:active         <= motion.eoffset-active
 net  E:active         => zo.active
