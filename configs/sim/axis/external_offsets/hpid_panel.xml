@@ -120,7 +120,7 @@
         <spinbox>
           <halpin>"minimum-vel"</halpin>
           <min_>0.0</min_>
-          <max_>3.0</max_>
+          <max_>30.0</max_>
           <width>4</width>
           <initval>0.0</initval>
           <resolution>0.1</resolution>

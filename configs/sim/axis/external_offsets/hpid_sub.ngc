@@ -14,13 +14,14 @@ o<hpid_sub> sub
    #<xseparation> = #10 (=0.5)
       #<safe_hgt> = #11 (=0.100)
 
-     #<feed_rate> = #12 (=100)
+    #<feed_rate1> = #12 (=120 FEED1)
     #<pause_secs> = #13 (=1)
        #<g64_tol> = #14 (=0)
 
    #<arc_timeout> = #15 (= 2)
    #<probe_speed> = #16 (=10)
   #<to_hgt_speed> = #17 (=25)
+    #<feed_rate2> = #18 (=60 FEED2)
 
 M111 ;clear notifications
 
@@ -42,8 +43,11 @@ o<rpt> repeat [#<rpt_ct>]
             M111 ;clear notifications
             G0 X#<x1> Y#<y1> Z#<safe_hgt>
 
-            M68 E0 Q#<torch_setpoint> (E:request     <= motion.analog-out-00)
+            ; ensure all gcode-program-controlled enables are 0
+            ; before starting touchoff
+            M65 P0 ;         (deassert E:enable-in-a <= motion.digital-out-00)
             M65 P1 ;         (deassert E:enable-in-b <= motion.digital-out-01)
+            M68 E0 Q#<torch_setpoint> (E:request     <= motion.analog-out-00 )
 
             ;hpid_touchoff subroutine (typical sequence):
             ;   probe to surface
@@ -55,10 +59,11 @@ o<rpt> repeat [#<rpt_ct>]
             ;   dwell for pierce delay (G4)
             ;   move to cut_height (G1)
 o<hpid_touchoff> call [#<pierce_hgt>][#<pierce_dly>][#<torch_cut_hgt>][#<arc_timeout>][#<probe_speed>][#<to_hgt_speed>]
-            F#<feed_rate>
+            F#<feed_rate1>
             G1 X #<x1> Y #<y1>
             G1 X #<x2> Y #<y1>
             G1 X #<x2> Y #<y2>
+            F  #<feed_rate2>
             G1 X #<x1> Y #<y2>
             G1 X #<x1> Y #<y1>
             M68 E0 Q0  ;set torch-volts 0 (E:request <= motion.analog-out-00)
