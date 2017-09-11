@@ -1,0 +1,62 @@
+component movingavg "Movingavg filter for testing";
+
+description
+"""
+Simple (non-recursive) implementation
+
+For servo-thread period of 1mS (1KHz sample rate)
+
+npts =   5 f3db = 90.4 Hz
+
+npts =  10 f3db = 44.5 Hz
+
+npts =  20 f3db = 22.2 Hz
+
+npts =  30 f3db = 14.8 Hz
+
+npts =  40 f3db = 11.1 Hz
+
+npts =  50 f3db =  8.9 Hz
+
+npts = 100 f3db =  4.4 Hz
+
+npts = 200 f3db =  2.2 Hz
+
+
+""";
+//""""quote char for vim highlighting
+
+pin in  s32   npts = 50   "min=2,max=500";
+pin in  float in  "in";
+pin out float out "out";
+function _;
+license "GPL";
+;;
+
+#define MAXPOINTS 500
+static double x[MAXPOINTS];
+
+// Note: this is a simple implementation for testing 
+// If incorporated, consider using a recursive algorithm
+
+FUNCTION(_) {
+int i;
+int n = npts;
+    if (npts < 2)         {n = 2;}
+    if (npts > MAXPOINTS) {n = MAXPOINTS;}
+    out = 0;
+    for (i = n-1; i >= 1; i--) {
+        x[i] = x[i-1];
+        out += x[i];
+    }
+    x[0] = in;
+    out = (out + x[0])/n;
+    /* Example (N=5):
+    x[4] = x[3];  x[n-1]   = x[n-2];
+    x[3] = x[2];  x[n-1-i] = x[n-2-i];  0<i<n-2
+    x[2] = x[1];
+    x[1] = x[0];
+    x[0] = in;
+    out = (x[0] + x[1] + x[2] + x[3] +x[4])/MAXPOINTS;
+    */
+}

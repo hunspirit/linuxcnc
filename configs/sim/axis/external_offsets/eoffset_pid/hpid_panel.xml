@@ -192,7 +192,8 @@
         <spinbox>
           <halpin>"frequency"</halpin>
           <min_>0.1</min_>
-          <max_>10.0</max_>
+          <!--freq big for disturbance testing-->
+          <max_>50.0</max_>
           <width>4</width>
           <initval>0.5</initval>
           <resolution>0.1</resolution>
